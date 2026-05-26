@@ -31,6 +31,37 @@
 
     <title>ticket_activity</title>
     <link rel="manifest" href="manifest.json" />
+    <script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+      async
+      defer
+    ></script>
+    <script>
+      window.__registerTurnstile = function (elementId, siteKey, callbackName) {
+        if (!window.turnstile) {
+          return false;
+        }
+        var el = document.getElementById(elementId);
+        if (!el) {
+          return false;
+        }
+        turnstile.render("#" + elementId, {
+          sitekey: siteKey,
+          callback: function (token) {
+            if (typeof window[callbackName] === "function") {
+              window[callbackName](token);
+            }
+          },
+          "expired-callback": function () {
+            var expiredName = callbackName + "_expired";
+            if (typeof window[expiredName] === "function") {
+              window[expiredName]();
+            }
+          },
+        });
+        return true;
+      };
+    </script>
   </head>
   <body>
     <script>
