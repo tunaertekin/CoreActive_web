@@ -45,21 +45,45 @@
         if (!el) {
           return false;
         }
-        turnstile.render("#" + elementId, {
-          sitekey: siteKey,
-          callback: function (token) {
-            if (typeof window[callbackName] === "function") {
-              window[callbackName](token);
-            }
-          },
-          "expired-callback": function () {
-            var expiredName = callbackName + "_expired";
-            if (typeof window[expiredName] === "function") {
-              window[expiredName]();
-            }
-          },
-        });
-        return true;
+        try {
+          var renderWidget = function () {
+            turnstile.render("#" + elementId, {
+              sitekey: siteKey,
+              callback: function (token) {
+                if (typeof window[callbackName] === "function") {
+                  window[callbackName](token);
+                }
+              },
+              "error-callback": function (code) {
+                console.error(
+                  "Turnstile error",
+                  code,
+                  "host=" + window.location.hostname,
+                  "sitekey=" + siteKey,
+                );
+                var errorName = callbackName + "_error";
+                if (typeof window[errorName] === "function") {
+                  window[errorName]();
+                }
+              },
+              "expired-callback": function () {
+                var expiredName = callbackName + "_expired";
+                if (typeof window[expiredName] === "function") {
+                  window[expiredName]();
+                }
+              },
+            });
+          };
+          if (typeof turnstile.ready === "function") {
+            turnstile.ready(renderWidget);
+          } else {
+            renderWidget();
+          }
+          return true;
+        } catch (e) {
+          console.error("turnstile.render failed", e);
+          return false;
+        }
       };
     </script>
   </head>
