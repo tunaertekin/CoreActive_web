@@ -37,7 +37,10 @@
       defer
     ></script>
     <script>
-      window.__registerTurnstile = function (elementId, siteKey, callbackName) {
+      // Token ve durum: polling ile Dart tarafindan okunur, callback/interop sorunu yok.
+      window.__turnstileStore = {};
+
+      window.__registerTurnstile = function (elementId, siteKey) {
         if (!window.turnstile) {
           return false;
         }
@@ -45,45 +48,49 @@
         if (!el) {
           return false;
         }
+        // Onceki kaydı temizle.
+        delete window.__turnstileStore[elementId];
+
         try {
-          var renderWidget = function () {
+          var doRender = function () {
             turnstile.render("#" + elementId, {
               sitekey: siteKey,
               callback: function (token) {
-                if (typeof window[callbackName] === "function") {
-                  window[callbackName](token);
-                }
+                window.__turnstileStore[elementId] = { token: token, error: false };
               },
               "error-callback": function (code) {
                 console.error(
-                  "Turnstile error",
-                  code,
-                  "host=" + window.location.hostname,
-                  "sitekey=" + siteKey,
+                  "Turnstile error", code,
+                  "host=" + window.location.hostname
                 );
-                var errorName = callbackName + "_error";
-                if (typeof window[errorName] === "function") {
-                  window[errorName]();
-                }
+                window.__turnstileStore[elementId] = { token: null, error: true, code: code };
               },
               "expired-callback": function () {
-                var expiredName = callbackName + "_expired";
-                if (typeof window[expiredName] === "function") {
-                  window[expiredName]();
-                }
+                delete window.__turnstileStore[elementId];
               },
             });
           };
           if (typeof turnstile.ready === "function") {
-            turnstile.ready(renderWidget);
+            turnstile.ready(doRender);
           } else {
-            renderWidget();
+            doRender();
           }
           return true;
         } catch (e) {
           console.error("turnstile.render failed", e);
           return false;
         }
+      };
+
+      window.__getTurnstileResult = function (elementId) {
+        var r = window.__turnstileStore[elementId];
+        if (!r) return null;
+        if (r.error) return "ERROR";
+        return r.token || null;
+      };
+
+      window.__clearTurnstileResult = function (elementId) {
+        delete window.__turnstileStore[elementId];
       };
     </script>
   </head>
