@@ -94,8 +94,17 @@
       };
     </script>
     <script>
-      // Flutter HashUrlStrategy / Navigator /app rotası path'i ezmeden önce kaydet.
-      window.__coreactiveLaunchHref = window.location.href;
+      // Flutter HashUrlStrategy / Navigator /app rotasını ezmeden önce kaydet.
+      // Dart2JS `(window as dynamic).__coreactiveLaunchHref` adını minify eder
+      // (canlı bundle'da window.gc4O()), bu yüzden attribute + sessionStorage da yazıyoruz.
+      (function () {
+        var href = window.location.href;
+        window.__coreactiveLaunchHref = href;
+        try {
+          document.documentElement.setAttribute("data-launch-href", href);
+          sessionStorage.setItem("__coreactiveLaunchHref", href);
+        } catch (e) {}
+      })();
     </script>
   </head>
   <body>
