@@ -1,6 +1,23 @@
 <!doctype html>
 <html>
   <head>
+    <script data-cfasync="false">
+      // Cloudflare/Flutter URL'yi ezmeden pathname'i kilitle.
+      // /app ve /login giriş; Dart2JS window.__coreactiveLaunchHref'i minify eder.
+      (function () {
+        var href = window.location.href;
+        var path = (window.location.pathname || "/").toLowerCase();
+        window.__coreactiveLaunchHref = href;
+        try {
+          document.documentElement.setAttribute("data-launch-href", href);
+          document.documentElement.setAttribute("data-launch-path", path);
+          var first = path.replace(/^\//, "").split("/")[0];
+          if (first === "app" || first === "login") {
+            document.documentElement.setAttribute("data-entry", "app");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -92,18 +109,6 @@
       window.__clearTurnstileResult = function (elementId) {
         delete window.__turnstileStore[elementId];
       };
-    </script>
-    <script>
-      // Flutter URL'yi ezmeden önce kaydet. Dart2JS window.__coreactiveLaunchHref
-      // adını minify ettiği için asıl kaynak data-launch-href attribute'u.
-      // sessionStorage kullanma: tab içinde /app kalır ve sonraki sayfaları bozar.
-      (function () {
-        var href = window.location.href;
-        window.__coreactiveLaunchHref = href;
-        try {
-          document.documentElement.setAttribute("data-launch-href", href);
-        } catch (e) {}
-      })();
     </script>
   </head>
   <body>
