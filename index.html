@@ -93,6 +93,10 @@
         delete window.__turnstileStore[elementId];
       };
     </script>
+    <script>
+      // Flutter HashUrlStrategy / Navigator /app rotası path'i ezmeden önce kaydet.
+      window.__coreactiveLaunchHref = window.location.href;
+    </script>
   </head>
   <body>
     <script>
