@@ -17,6 +17,12 @@ WORKSPACE="/agent/repos"
 BACKEND="$WORKSPACE/CoreActive_backend"
 FLUTTER_APP="$WORKSPACE/CoreActive-Flutter"
 
+# Always use the local baked database for this dev/test environment, even if a
+# team/environment-scoped DATABASE_URL secret is injected (which would otherwise
+# point the app at production). This override applies only to processes started
+# here.
+LOCAL_DATABASE_URL="postgres://coreactive:coreactive@localhost:5432/coreactive"
+
 port_listening() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && { exec 3>&- 3<&-; return 0; } || return 1; }
 
 # --- PostgreSQL ---
@@ -48,7 +54,7 @@ fi
 # --- Database migrations (node-pg-migrate) ---
 if [ -d "$BACKEND/migrations" ]; then
   echo "[start] Applying database migrations (migrate:up)..."
-  ( cd "$BACKEND" && npm run migrate:up ) || echo "[start] WARN: migrate:up failed; see output above."
+  ( cd "$BACKEND" && DATABASE_URL="$LOCAL_DATABASE_URL" npm run migrate:up ) || echo "[start] WARN: migrate:up failed; see output above."
 fi
 
 # --- Backend API (port 10000) ---
@@ -56,7 +62,7 @@ if port_listening 10000; then
   echo "[start] Backend API already running on :10000, skipping."
 elif [ -d "$BACKEND" ]; then
   echo "[start] Launching backend API on :10000..."
-  ( cd "$BACKEND" && nohup node server.js > /tmp/coreactive-backend.log 2>&1 & )
+  ( cd "$BACKEND" && DATABASE_URL="$LOCAL_DATABASE_URL" nohup node server.js > /tmp/coreactive-backend.log 2>&1 & )
   for _ in $(seq 1 20); do
     if port_listening 10000; then break; fi
     sleep 1
