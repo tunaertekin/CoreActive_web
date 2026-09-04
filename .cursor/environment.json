@@ -1,0 +1,17 @@
+{
+  "name": "CoreActive (backend + Flutter web)",
+  "user": "ubuntu",
+  "install": "bash /agent/repos/CoreActive_web/.cursor/scripts/install.sh",
+  "start": "bash /agent/repos/CoreActive_web/.cursor/scripts/start.sh",
+  "terminals": [
+    {
+      "name": "backend-api",
+      "command": "cd /agent/repos/CoreActive_backend && node server.js"
+    },
+    {
+      "name": "flutter-web",
+      "command": "export PATH=/opt/flutter/bin:$PATH && cd /agent/repos/CoreActive-Flutter && flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080 --dart-define=API_BASE_URL=http://localhost:10000 --dart-define=WS_BASE_URL=ws://localhost:10000"
+    }
+  ],
+  "ports": [10000, 8080]
+}
