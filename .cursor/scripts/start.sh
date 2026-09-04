@@ -36,6 +36,16 @@ echo "[start] Applying idempotent dev bootstrap (schema + seed)..."
 PGPASSWORD=coreactive psql -h localhost -U coreactive -d coreactive \
   -v ON_ERROR_STOP=1 -f "$SCRIPT_DIR/dev-bootstrap.sql"
 
+# --- Self-heal dependencies ---
+# The backend/Flutter repos are carried in the base image rather than checked
+# out fresh, so their generated state (node_modules, .env, .dart_tool) may be
+# absent on some boots. Refresh via install.sh only when something is missing.
+if { [ -d "$BACKEND" ] && { [ ! -d "$BACKEND/node_modules" ] || [ ! -f "$BACKEND/.env" ]; }; } \
+   || { [ -d "$FLUTTER_APP" ] && [ ! -d "$FLUTTER_APP/.dart_tool" ]; }; then
+  echo "[start] Dependencies/.env missing; running install.sh to self-heal..."
+  bash "$SCRIPT_DIR/install.sh"
+fi
+
 # --- Backend API (port 10000) ---
 if port_listening 10000; then
   echo "[start] Backend API already running on :10000, skipping."
