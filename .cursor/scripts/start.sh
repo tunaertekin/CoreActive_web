@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Per-boot startup for the CoreActive dev environment:
-#   1. Bring up PostgreSQL and ensure the dev role/db + bootstrap schema.
-#   2. Launch the backend API and the Flutter web dev server as idempotent
+#   1. Bring up PostgreSQL and ensure the dev role/db exist.
+#   2. Self-heal missing dependencies (node_modules / .env / Flutter .dart_tool).
+#   3. Apply database migrations (node-pg-migrate: migrate:up) so the schema is
+#      always current. On the baked dev/test DB this is a no-op; on an empty DB
+#      the baseline migration builds the full schema.
+#   4. Launch the backend API and Flutter web dev server as idempotent
 #      background services (skipped if their port is already listening).
 # The script reconciles state and returns; it does not stay attached.
 set -euo pipefail
@@ -9,7 +13,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PATH="/opt/flutter/bin:$PATH"
 
-# Resolve sibling repos from a known layout.
 WORKSPACE="/agent/repos"
 BACKEND="$WORKSPACE/CoreActive_backend"
 FLUTTER_APP="$WORKSPACE/CoreActive-Flutter"
@@ -28,13 +31,9 @@ done
 
 echo "[start] Ensuring dev role and database exist..."
 sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='coreactive'" | grep -q 1 \
-  || sudo -u postgres psql -c "CREATE ROLE coreactive LOGIN PASSWORD 'coreactive' CREATEDB;"
+  || sudo -u postgres psql -c "CREATE ROLE coreactive LOGIN PASSWORD 'coreactive' SUPERUSER;"
 sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='coreactive'" | grep -q 1 \
   || sudo -u postgres createdb -O coreactive coreactive
-
-echo "[start] Applying idempotent dev bootstrap (schema + seed)..."
-PGPASSWORD=coreactive psql -h localhost -U coreactive -d coreactive \
-  -v ON_ERROR_STOP=1 -f "$SCRIPT_DIR/dev-bootstrap.sql"
 
 # --- Self-heal dependencies ---
 # The backend/Flutter repos are carried in the base image rather than checked
@@ -44,6 +43,12 @@ if { [ -d "$BACKEND" ] && { [ ! -d "$BACKEND/node_modules" ] || [ ! -f "$BACKEND
    || { [ -d "$FLUTTER_APP" ] && [ ! -d "$FLUTTER_APP/.dart_tool" ]; }; then
   echo "[start] Dependencies/.env missing; running install.sh to self-heal..."
   bash "$SCRIPT_DIR/install.sh"
+fi
+
+# --- Database migrations (node-pg-migrate) ---
+if [ -d "$BACKEND/migrations" ]; then
+  echo "[start] Applying database migrations (migrate:up)..."
+  ( cd "$BACKEND" && npm run migrate:up ) || echo "[start] WARN: migrate:up failed; see output above."
 fi
 
 # --- Backend API (port 10000) ---
