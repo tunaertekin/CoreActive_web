@@ -6,7 +6,13 @@ set -euo pipefail
 
 export PATH="/opt/flutter/bin:$PATH"
 
-WORKSPACE="/agent/repos"
+# Resolve the workspace root (parent of this repo) from the script location so
+# the script works regardless of the absolute checkout path. Falls back to the
+# known cloud layout.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+WORKSPACE="$(cd "$REPO_ROOT/.." && pwd)"
+[ -d "$WORKSPACE/CoreActive_backend" ] || WORKSPACE="/agent/repos"
 BACKEND="$WORKSPACE/CoreActive_backend"
 FLUTTER_APP="$WORKSPACE/CoreActive-Flutter"
 
