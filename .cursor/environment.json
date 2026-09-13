@@ -1,0 +1,11 @@
+{
+  "name": "CoreActive Web",
+  "install": "bash .cursor/scripts/install.sh",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "python3 .cursor/scripts/serve.py"
+    }
+  ],
+  "ports": [8080]
+}
