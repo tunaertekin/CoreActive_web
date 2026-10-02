@@ -1,11 +1,11 @@
 {
-    "name": "ticket_activity",
-    "short_name": "ticket_activity",
+    "name": "CoreActive",
+    "short_name": "CoreActive",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "CoreActive çalışma, talep ve insan kaynakları uygulaması.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
