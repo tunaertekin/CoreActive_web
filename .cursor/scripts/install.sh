@@ -29,6 +29,9 @@ NODE_ENV=development
 PORT=10000
 DATABASE_URL=postgres://coreactive:coreactive@localhost:5432/coreactive
 DB_SSL_REJECT_UNAUTHORIZED=false
+# Local PostgreSQL serves no TLS; keep the migration runner (scripts/migrate.js)
+# on a plain connection so `npm run migrate` works out of the box.
+PGSSL=false
 CORS_ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000
 IDENTITY_LOGIN_CONTEXT_SECRET=dev-login-context-secret-please-override-in-prod
 SECRET_ENCRYPTION_KEY=dev0000000000000000000000000000000000000000000=

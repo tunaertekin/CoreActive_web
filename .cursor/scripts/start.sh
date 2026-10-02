@@ -2,9 +2,10 @@
 # Per-boot startup for the CoreActive dev environment:
 #   1. Bring up PostgreSQL and ensure the dev role/db exist.
 #   2. Self-heal missing dependencies (node_modules / .env / Flutter .dart_tool).
-#   3. Apply database migrations (node-pg-migrate: migrate:up) so the schema is
-#      always current. On the baked dev/test DB this is a no-op; on an empty DB
-#      the baseline migration builds the full schema.
+#   3. Apply database migrations (backend's own runner: `npm run migrate`,
+#      i.e. scripts/migrate.js up) so the schema is always current. On the baked
+#      dev/test DB only the pending versioned V*.sql files are applied; already
+#      present objects are skipped by the runner.
 #   4. Launch the backend API and Flutter web dev server as idempotent
 #      background services (skipped if their port is already listening).
 # The script reconciles state and returns; it does not stay attached.
@@ -51,10 +52,12 @@ if { [ -d "$BACKEND" ] && { [ ! -d "$BACKEND/node_modules" ] || [ ! -f "$BACKEND
   bash "$SCRIPT_DIR/install.sh"
 fi
 
-# --- Database migrations (node-pg-migrate) ---
+# --- Database migrations (backend scripts/migrate.js) ---
+# PGSSL=false: the local baked PostgreSQL does not serve TLS, and the runner
+# otherwise defaults to an SSL connection.
 if [ -d "$BACKEND/migrations" ]; then
-  echo "[start] Applying database migrations (migrate:up)..."
-  ( cd "$BACKEND" && DATABASE_URL="$LOCAL_DATABASE_URL" npm run migrate:up ) || echo "[start] WARN: migrate:up failed; see output above."
+  echo "[start] Applying database migrations (npm run migrate)..."
+  ( cd "$BACKEND" && DATABASE_URL="$LOCAL_DATABASE_URL" PGSSL=false npm run migrate ) || echo "[start] WARN: migrate failed; see output above."
 fi
 
 # --- Backend API (port 10000) ---
